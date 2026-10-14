@@ -60,11 +60,13 @@ const path = require('node:path');
         err ? reject(err) : resolve();
       });
     });
-    const expiredResponse = await fetch(`${base}/api/admin/logs?installId=test-install`, {
+    const oldResponse = await fetch(`${base}/api/admin/logs?installId=test-install`, {
       headers: { 'x-admin-key': 'test-admin' }
     });
-    assert.equal(expiredResponse.status, 200);
-    assert.deepEqual(await expiredResponse.json(), []);
+    assert.equal(oldResponse.status, 200);
+    const oldRows = await oldResponse.json();
+    assert.equal(oldRows.length, 1);
+    assert.equal(oldRows[0].message, 'event=hit');
     const remaining = await new Promise((resolve, reject) => {
       const db = new sqlite3.Database(dbPath);
       db.get('SELECT COUNT(*) AS count FROM diagnostic_logs', (err, row) => {
@@ -72,8 +74,8 @@ const path = require('node:path');
         err ? reject(err) : resolve(row.count);
       });
     });
-    assert.equal(remaining, 0, 'expired logs must be deleted from SQLite');
-    console.log('PASS: ingest, deduplication, admin query and 30-minute deletion');
+    assert.equal(remaining, 1, 'remote logs must remain in SQLite');
+    console.log('PASS: ingest, deduplication, admin query and indefinite remote retention');
   } finally {
     child.kill();
     await new Promise(resolve => child.once('exit', resolve));

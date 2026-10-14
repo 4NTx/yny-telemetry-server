@@ -86,12 +86,10 @@ function initSchema() {
         `);
         db.run(`CREATE INDEX IF NOT EXISTS idx_logs_install ON diagnostic_logs(install_id, id)`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_logs_category ON diagnostic_logs(category, id)`);
-        db.run(`CREATE INDEX IF NOT EXISTS idx_logs_received ON diagnostic_logs(received_at)`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_install_short ON installations(short_id)`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_install_nick ON installations(last_nick)`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_events_install ON telemetry_events(install_id)`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_events_created ON telemetry_events(created_at)`);
-        pruneDiagnosticLogs();
     });
 }
 
@@ -291,33 +289,18 @@ app.post('/api/telemetry/logs', telemetryLimiter, (req, res) => {
     });
 });
 
-const LOG_RETENTION_SQL = "DELETE FROM diagnostic_logs WHERE received_at <= datetime('now', '-30 minutes')";
-
-function pruneDiagnosticLogs(callback) {
-    db.run(LOG_RETENTION_SQL, err => {
-        if (err) console.error('Falha ao remover logs expirados:', err);
-        if (callback) callback(err);
-    });
-}
-
-const logPruneTimer = setInterval(pruneDiagnosticLogs, 30 * 1000);
-logPruneTimer.unref();
 app.get('/api/admin/logs', requireAdmin, (req, res) => {
     const limit = Math.max(1, Math.min(parseInt(req.query.limit, 10) || 100, 500));
     const before = Math.max(1, parseInt(req.query.before, 10) || Number.MAX_SAFE_INTEGER);
     const installId = String(req.query.installId || '');
     const category = String(req.query.category || '');
     const search = String(req.query.search || '').slice(0, 100);
-    pruneDiagnosticLogs(err => {
-        if (err) return res.status(500).json({ error: 'Falha ao limpar logs expirados.' });
-        db.all(`SELECT id, install_id, short_id, nick, server, log_time, category, message, received_at
-            FROM diagnostic_logs WHERE received_at > datetime('now', '-30 minutes')
-            AND id < ? AND (? = '' OR install_id = ? OR short_id = ?)
-            AND (? = '' OR category = ?) AND (? = '' OR message LIKE ?)
-            ORDER BY id DESC LIMIT ?`,
-            [before, installId, installId, installId, category, category, search, `%${search}%`, limit],
-            (queryErr, rows) => queryErr ? res.status(500).json({ error: queryErr.message }) : res.json(rows));
-    });
+    db.all(`SELECT id, install_id, short_id, nick, server, log_time, category, message, received_at
+        FROM diagnostic_logs WHERE id < ? AND (? = '' OR install_id = ? OR short_id = ?)
+        AND (? = '' OR category = ?) AND (? = '' OR message LIKE ?)
+        ORDER BY id DESC LIMIT ?`,
+        [before, installId, installId, installId, category, category, search, `%${search}%`, limit],
+        (err, rows) => err ? res.status(500).json({ error: err.message }) : res.json(rows));
 });
 app.listen(PORT, () => {
     console.log(`=======================================================`);
