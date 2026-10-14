@@ -14,6 +14,7 @@ const path = require('node:path');
     env: { ...process.env, PORT: String(port), DATA_DIR: dir, CLIENT_TOKEN: 'test-client', ADMIN_KEY: 'test-admin' },
     stdio: 'ignore'
   });
+  const childExit = new Promise(resolve => child.once('exit', resolve));
   const base = `http://127.0.0.1:${port}`;
   try {
     let ready = false;
@@ -78,7 +79,7 @@ const path = require('node:path');
     console.log('PASS: ingest, deduplication, admin query and indefinite remote retention');
   } finally {
     child.kill();
-    await new Promise(resolve => child.once('exit', resolve));
+    await childExit;
     fs.rmSync(dir, { recursive: true, force: true });
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });
