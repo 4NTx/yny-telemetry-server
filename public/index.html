@@ -166,7 +166,8 @@
 
         async function fetchWithAuth(url) {
             const key = getAdminKey();
-            const res = await fetch(url, {
+            const prefix = location.pathname.startsWith('/telemetry/') ? '/telemetry' : '';
+            const res = await fetch(prefix + url, {
                 headers: { 'X-Admin-Key': key }
             });
             if (res.status === 401) {
