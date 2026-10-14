@@ -123,13 +123,32 @@
             </div>
         </div>
 
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
+            <div class="px-6 py-4 border-b border-slate-800">
+                <h2 class="font-semibold text-base text-white">Logs de Diagnóstico</h2>
+                <div class="flex flex-wrap gap-2 mt-3">
+                    <input id="logInstall" type="text" placeholder="ID da instalação ou Short ID" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs w-60" oninput="debounceSearch()">
+                    <input id="logCategory" type="text" placeholder="Módulo, ex: AutoArmor" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs w-52" oninput="debounceSearch()">
+                    <input id="logSearch" type="text" placeholder="Buscar na mensagem" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs flex-1 min-w-48" oninput="debounceSearch()">
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300 mono">
+                    <thead class="bg-slate-950/60 text-slate-400"><tr>
+                        <th class="px-4 py-3">Horário</th><th class="px-4 py-3">ID</th><th class="px-4 py-3">Nick</th>
+                        <th class="px-4 py-3">Servidor</th><th class="px-4 py-3">Módulo</th><th class="px-4 py-3">Mensagem</th>
+                    </tr></thead>
+                    <tbody id="logsBody" class="divide-y divide-slate-800/60"><tr><td colspan="6" class="px-4 py-6 text-slate-500">Aguardando logs...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
     </main>
 
     <script>
         let searchTimer = null;
 
         function getAdminKey() {
-            return localStorage.getItem('modpack_admin_key') || 'admin123';
+            return localStorage.getItem('modpack_admin_key') || '';
         }
 
         function saveKeyAndRefresh() {
@@ -155,6 +174,10 @@
                 return null;
             }
             return res.json();
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
         }
 
         async function refreshData() {
@@ -193,6 +216,27 @@
                 instBody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-slate-500">Nenhuma instalação encontrada.</td></tr>`;
             }
 
+            const logParams = new URLSearchParams({ limit: '100' });
+            const logInstall = document.getElementById('logInstall').value.trim();
+            const logCategory = document.getElementById('logCategory').value.trim();
+            const logSearch = document.getElementById('logSearch').value.trim();
+            if (logInstall) logParams.set('installId', logInstall.replace(/^#/, ''));
+            if (logCategory) logParams.set('category', logCategory);
+            if (logSearch) logParams.set('search', logSearch);
+            const logs = await fetchWithAuth(`/api/admin/logs?${logParams}`);
+            const logsBody = document.getElementById('logsBody');
+            if (logs && logs.length) {
+                logsBody.innerHTML = logs.map(e => `<tr class="hover:bg-slate-800/30">
+                    <td class="px-4 py-3 whitespace-nowrap">${escapeHtml(e.log_time)}</td>
+                    <td class="px-4 py-3 text-emerald-400">#${escapeHtml(e.short_id)}</td>
+                    <td class="px-4 py-3">${escapeHtml(e.nick)}</td>
+                    <td class="px-4 py-3">${escapeHtml(e.server)}</td>
+                    <td class="px-4 py-3">${escapeHtml(e.category)}</td>
+                    <td class="px-4 py-3 whitespace-pre-wrap break-all">${escapeHtml(e.message)}</td>
+                </tr>`).join('');
+            } else {
+                logsBody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-slate-500">Nenhum log encontrado.</td></tr>';
+            }
             // Events
             const events = await fetchWithAuth(`/api/admin/events${queryParam}`);
             const eventsBody = document.getElementById('eventsBody');

@@ -9,7 +9,7 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
-      - CLIENT_TOKEN=yny-modpack-client
-      - ADMIN_KEY=admin123
+      - CLIENT_TOKEN=${CLIENT_TOKEN:?Defina CLIENT_TOKEN}
+      - ADMIN_KEY=${ADMIN_KEY:?Defina ADMIN_KEY}
     volumes:
       - ./data:/app/data

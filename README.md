@@ -18,6 +18,8 @@ docker compose up -d --build
 docker compose logs -f
 ```
 
+Configure `CLIENT_TOKEN` com o mesmo valor usado pelo cliente e uma `ADMIN_KEY` exclusiva no ambiente (ou em um arquivo `.env` do Docker Compose). O serviço recusa iniciar sem essas variáveis.
+
 O servidor estará rodando em: `http://localhost:3000`  
 Painel de auditoria: `http://localhost:3000/index.html`
 
@@ -35,8 +37,8 @@ npm start
 | Variável | Padrão | Descrição |
 | :--- | :--- | :--- |
 | `PORT` | `3000` | Porta HTTP do serviço |
-| `CLIENT_TOKEN` | `yny-modpack-client` | Token secreto esperado no cabeçalho `x-client-token` |
-| `ADMIN_KEY` | `admin123` | Chave de autenticação para acessar os endpoints administrativos e o painel web |
+| `CLIENT_TOKEN` | obrigatório | Token secreto esperado no cabeçalho `x-client-token` |
+| `ADMIN_KEY` | obrigatório | Chave de autenticação para acessar os endpoints administrativos e o painel web |
 | `DATA_DIR` | `./data` | Diretório onde o arquivo SQLite `telemetry.db` será salvo |
 
 ---
@@ -47,7 +49,7 @@ npm start
 - **POST** `/api/telemetry/event`
 - **Headers**:
   - `Content-Type: application/json`
-  - `x-client-token: yny-modpack-client`
+  - `x-client-token: <CLIENT_TOKEN>`
 - **Body JSON**:
 ```json
 {
@@ -64,7 +66,7 @@ npm start
 - **Retorno**: `200 OK` `{"ok": true, "id": 1}`
 
 ### 2. Painel Administrativo & Estatísticas
-- **Headers**: `x-admin-key: admin123` (ou query param `?adminKey=admin123`)
+- **Headers**: `x-admin-key: <ADMIN_KEY>`
 - **GET** `/api/admin/stats`: Métricas globais (instalações únicas, nicks distintos, ativos recentes, total de eventos).
 - **GET** `/api/admin/installations?search=...`: Lista instalações com agregação de nicks utilizados pelo mesmo computador.
 - **GET** `/api/admin/events?search=...&limit=100`: Histórico detalhado de auditoria.
@@ -88,3 +90,13 @@ server {
     }
 }
 ```
+
+## Logs de diagnóstico remotos
+
+O cliente YNYUtils envia os registros do `DebugLog` de todos os módulos e acompanha `logs/latest.log` e os arquivos `.log`/`.log.gz` nas demais pastas de logs do jogo para `POST /api/telemetry/logs`, em lotes de até 25 partes. Mensagens longas são divididas em partes numeradas para caber no limite da API. Cada linha mantém ID da instalação, ID curto, nick e servidor capturados no momento do registro, horário, categoria e mensagem. O progresso da leitura do log geral fica em `logs/ynyutils/game-log-checkpoints.properties`. A fila fica em `logs/ynyutils/remote-pending/` até o servidor confirmar o lote. O reenvio usa o mesmo ID por linha para evitar duplicatas. Senhas, tokens e comandos de autenticação conhecidos são ocultados no envio; os logs locais continuam como antes.
+
+Consulta administrativa: `GET /api/admin/logs?installId=...&category=...&search=...&limit=100&before=ID`, com o cabeçalho `x-admin-key`. O parâmetro `before` pagina para registros mais antigos. É necessário publicar esta versão do servidor para ativar o envio remoto do cliente atualizado.
+
+Depois da confirmação do envio, o servidor guarda cada registro na tabela `diagnostic_logs` do SQLite `DATA_DIR/telemetry.db` (no Docker Compose, `/app/data/telemetry.db`, persistido em `server-telemetry/data/telemetry.db` no host). A fila `logs/ynyutils/remote-pending/` no cliente remove o arquivo confirmado. Os registros remotos expiram 30 minutos após `received_at`: o servidor os exclui na inicialização, a cada 30 segundos e antes de uma consulta administrativa. A consulta também filtra registros expirados. Essa regra se aplica somente a `diagnostic_logs`; os arquivos de log originais do jogo e as tabelas de identificação e eventos seguem suas políticas próprias.
+
+A entrega depende de conexão, espaço em disco e do serviço remoto. Enquanto estiver offline, os arquivos ficam na fila local e são reenviados quando o jogo voltar a gerar logs. Quando a fila de escrita local enche, a chamada que gerou o log espera o gravador liberar espaço; isso preserva os registros, mas pode causar atraso no jogo durante uma sobrecarga. Falha de disco ou encerramento abrupto antes da gravação ainda podem impedir a entrega.

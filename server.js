@@ -6,12 +6,13 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const CLIENT_TOKEN = process.env.CLIENT_TOKEN || 'yny-modpack-client';
-const ADMIN_KEY = process.env.ADMIN_KEY || 'admin123'; // Altere em produção
+const CLIENT_TOKEN = process.env.CLIENT_TOKEN;
+const ADMIN_KEY = process.env.ADMIN_KEY;
+if (!CLIENT_TOKEN || !ADMIN_KEY) throw new Error('Configure CLIENT_TOKEN e ADMIN_KEY antes de iniciar.');
 
 app.set('trust proxy', 1);
 app.use(cors());
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json({ limit: '128kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Inicializa banco de dados SQLite persistente em pasta data/
@@ -68,10 +69,29 @@ function initSchema() {
         `);
 
         // Índices para otimização de busca rápida
+        db.run(`
+            CREATE TABLE IF NOT EXISTS diagnostic_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                install_id TEXT NOT NULL,
+                entry_id TEXT NOT NULL,
+                short_id TEXT NOT NULL,
+                nick TEXT NOT NULL,
+                server TEXT NOT NULL,
+                log_time TEXT NOT NULL,
+                category TEXT NOT NULL,
+                message TEXT NOT NULL,
+                received_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(install_id, entry_id)
+            )
+        `);
+        db.run(`CREATE INDEX IF NOT EXISTS idx_logs_install ON diagnostic_logs(install_id, id)`);
+        db.run(`CREATE INDEX IF NOT EXISTS idx_logs_category ON diagnostic_logs(category, id)`);
+        db.run(`CREATE INDEX IF NOT EXISTS idx_logs_received ON diagnostic_logs(received_at)`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_install_short ON installations(short_id)`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_install_nick ON installations(last_nick)`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_events_install ON telemetry_events(install_id)`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_events_created ON telemetry_events(created_at)`);
+        pruneDiagnosticLogs();
     });
 }
 
@@ -84,7 +104,7 @@ const telemetryLimiter = rateLimit({
 
 // Middleware de autenticação administrativa
 function requireAdmin(req, res, next) {
-    const key = req.headers['x-admin-key'] || req.query.adminKey;
+    const key = req.headers['x-admin-key'];
     if (!key || key !== ADMIN_KEY) {
         return res.status(401).json({ error: 'Acesso administrativo não autorizado.' });
     }
@@ -231,11 +251,78 @@ app.get('/api/admin/events', requireAdmin, (req, res) => {
     });
 });
 
+/** Receives bounded batches from the durable client log spool. */
+app.post('/api/telemetry/logs', telemetryLimiter, (req, res) => {
+    if (CLIENT_TOKEN && req.headers['x-client-token'] !== CLIENT_TOKEN) {
+        return res.status(403).json({ error: 'Token de cliente inválido.' });
+    }
+    const { installId, shortId, nick, server, entries } = req.body || {};
+    if (typeof installId !== 'string' || !installId || typeof shortId !== 'string' || !shortId ||
+        !Array.isArray(entries) || entries.length < 1 || entries.length > 25) {
+        return res.status(400).json({ error: 'Lote inválido.' });
+    }
+    const rows = [];
+    for (const entry of entries) {
+        if (!entry || typeof entry.id !== 'string' || typeof entry.time !== 'string' ||
+            typeof entry.category !== 'string' || typeof entry.message !== 'string' ||
+            entry.id.length > 48 || entry.time.length > 32 || entry.category.length > 64 ||
+            entry.message.length > 8192) {
+            return res.status(400).json({ error: 'Registro inválido.' });
+        }
+        rows.push([installId.slice(0, 64), entry.id, shortId.slice(0, 16),
+            String(entry.nick || nick || 'Jogador').slice(0, 32), String(entry.server || server || 'local').slice(0, 128),
+            entry.time, entry.category, entry.message]);
+    }
+    db.serialize(() => {
+        db.run('BEGIN IMMEDIATE', err => {
+            if (err) return res.status(500).json({ error: 'Banco indisponível.' });
+            const stmt = db.prepare(`INSERT OR IGNORE INTO diagnostic_logs
+                (install_id, entry_id, short_id, nick, server, log_time, category, message)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+            for (const row of rows) stmt.run(row);
+            stmt.finalize(err2 => {
+                if (err2) return db.run('ROLLBACK', () => res.status(500).json({ error: 'Falha ao gravar lote.' }));
+                db.run('COMMIT', err3 => {
+                    if (err3) return res.status(500).json({ error: 'Falha ao confirmar lote.' });
+                    res.json({ ok: true, accepted: rows.length });
+                });
+            });
+        });
+    });
+});
+
+const LOG_RETENTION_SQL = "DELETE FROM diagnostic_logs WHERE received_at <= datetime('now', '-30 minutes')";
+
+function pruneDiagnosticLogs(callback) {
+    db.run(LOG_RETENTION_SQL, err => {
+        if (err) console.error('Falha ao remover logs expirados:', err);
+        if (callback) callback(err);
+    });
+}
+
+const logPruneTimer = setInterval(pruneDiagnosticLogs, 30 * 1000);
+logPruneTimer.unref();
+app.get('/api/admin/logs', requireAdmin, (req, res) => {
+    const limit = Math.max(1, Math.min(parseInt(req.query.limit, 10) || 100, 500));
+    const before = Math.max(1, parseInt(req.query.before, 10) || Number.MAX_SAFE_INTEGER);
+    const installId = String(req.query.installId || '');
+    const category = String(req.query.category || '');
+    const search = String(req.query.search || '').slice(0, 100);
+    pruneDiagnosticLogs(err => {
+        if (err) return res.status(500).json({ error: 'Falha ao limpar logs expirados.' });
+        db.all(`SELECT id, install_id, short_id, nick, server, log_time, category, message, received_at
+            FROM diagnostic_logs WHERE received_at > datetime('now', '-30 minutes')
+            AND id < ? AND (? = '' OR install_id = ? OR short_id = ?)
+            AND (? = '' OR category = ?) AND (? = '' OR message LIKE ?)
+            ORDER BY id DESC LIMIT ?`,
+            [before, installId, installId, installId, category, category, search, `%${search}%`, limit],
+            (queryErr, rows) => queryErr ? res.status(500).json({ error: queryErr.message }) : res.json(rows));
+    });
+});
 app.listen(PORT, () => {
     console.log(`=======================================================`);
     console.log(`  Servidor de Telemetria e Auditoria YNY Modpack`);
     console.log(`  Porta: http://localhost:${PORT}`);
     console.log(`  Painel Web: http://localhost:${PORT}/index.html`);
-    console.log(`  Chave Admin: ${ADMIN_KEY}`);
     console.log(`=======================================================`);
 });
