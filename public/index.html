@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Auditoria e Distribuição - Modpack</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Topbar -->
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="font-bold text-lg tracking-tight">YNY Modpack <span class="text-emerald-400 font-mono text-sm ml-1">Auditoria & Telemetria</span></span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <input id="adminKeyInput" type="password" placeholder="Chave Admin..." class="bg-slate-800 border border-slate-700 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-emerald-500">
+                <button onclick="saveKeyAndRefresh()" class="bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold px-3 py-1.5 rounded-lg transition">Acessar</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+
+        <!-- Stat Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Instalações Únicas</p>
+                <p id="statInstallations" class="text-3xl font-bold mt-2 text-white mono">--</p>
+                <p class="text-xs text-slate-500 mt-1">Dispositivos identificados</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Nicks Registrados</p>
+                <p id="statNicks" class="text-3xl font-bold mt-2 text-emerald-400 mono">--</p>
+                <p class="text-xs text-slate-500 mt-1">Jogadores distintos</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ativos Recentes</p>
+                <p id="statActive" class="text-3xl font-bold mt-2 text-cyan-400 mono">--</p>
+                <p class="text-xs text-slate-500 mt-1">Últimos 15 minutos</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total de Eventos</p>
+                <p id="statEvents" class="text-3xl font-bold mt-2 text-amber-400 mono">--</p>
+                <p class="text-xs text-slate-500 mt-1">Auditorias processadas</p>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row gap-3 items-center justify-between">
+            <div class="relative w-full sm:w-96">
+                <input id="searchInput" oninput="debounceSearch()" type="text" placeholder="Buscar por Nick, Servidor ou Short ID (ex: #8F3A92C1)..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+            </div>
+            <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                <button onclick="refreshData()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-xl transition flex items-center space-x-2">
+                    <span>↻ Atualizar</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Installations Table -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                <h2 class="font-semibold text-base text-white">Instalações da Modpack</h2>
+                <span class="text-xs text-slate-500">Exibindo histórico de dispositivos</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-950/60 text-xs uppercase font-medium text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="px-6 py-3.5">Short ID (Print)</th>
+                            <th class="px-6 py-3.5">Último Nick</th>
+                            <th class="px-6 py-3.5">Nicks Registrados</th>
+                            <th class="px-6 py-3.5">Último Servidor</th>
+                            <th class="px-6 py-3.5">Clã</th>
+                            <th class="px-6 py-3.5">Versão</th>
+                            <th class="px-6 py-3.5">Último Acesso</th>
+                        </tr>
+                    </thead>
+                    <tbody id="installationsBody" class="divide-y divide-slate-800/60">
+                        <tr>
+                            <td colspan="7" class="px-6 py-8 text-center text-slate-500">Carregando dados...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Live Events Log -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                <h2 class="font-semibold text-base text-white">Feed de Eventos em Tempo Real</h2>
+                <span class="text-xs text-emerald-400 flex items-center space-x-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span>Ao vivo</span>
+                </span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-950/60 text-xs uppercase font-medium text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="px-6 py-3.5">Horário</th>
+                            <th class="px-6 py-3.5">Evento</th>
+                            <th class="px-6 py-3.5">Nick</th>
+                            <th class="px-6 py-3.5">Servidor</th>
+                            <th class="px-6 py-3.5">Clã</th>
+                            <th class="px-6 py-3.5">Short ID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventsBody" class="divide-y divide-slate-800/60 font-mono text-xs">
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center text-slate-500 font-sans text-sm">Aguardando eventos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        let searchTimer = null;
+
+        function getAdminKey() {
+            return localStorage.getItem('modpack_admin_key') || 'admin123';
+        }
+
+        function saveKeyAndRefresh() {
+            const key = document.getElementById('adminKeyInput').value.trim();
+            if (key) {
+                localStorage.setItem('modpack_admin_key', key);
+            }
+            refreshData();
+        }
+
+        function debounceSearch() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(refreshData, 300);
+        }
+
+        async function fetchWithAuth(url) {
+            const key = getAdminKey();
+            const res = await fetch(url, {
+                headers: { 'X-Admin-Key': key }
+            });
+            if (res.status === 401) {
+                alert('Chave de administrador inválida ou não configurada.');
+                return null;
+            }
+            return res.json();
+        }
+
+        async function refreshData() {
+            const search = document.getElementById('searchInput').value.trim();
+            const queryParam = search ? `?search=${encodeURIComponent(search)}` : '';
+
+            // Stats
+            const stats = await fetchWithAuth('/api/admin/stats');
+            if (stats) {
+                document.getElementById('statInstallations').textContent = stats.totalInstallations || 0;
+                document.getElementById('statNicks').textContent = stats.distinctNicks || 0;
+                document.getElementById('statActive').textContent = stats.activeRecently || 0;
+                document.getElementById('statEvents').textContent = stats.totalEvents || 0;
+            }
+
+            // Installations
+            const insts = await fetchWithAuth(`/api/admin/installations${queryParam}`);
+            const instBody = document.getElementById('installationsBody');
+            if (insts && insts.length > 0) {
+                instBody.innerHTML = insts.map(i => {
+                    const nicks = i.all_nicks ? i.all_nicks.split(',').map(n => `<span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-xs mr-1">${n}</span>`).join('') : i.last_nick;
+                    const date = new Date(i.last_seen).toLocaleString('pt-BR');
+                    return `
+                        <tr class="hover:bg-slate-800/40 transition">
+                            <td class="px-6 py-4 font-mono font-bold text-emerald-400">#${i.short_id}</td>
+                            <td class="px-6 py-4 font-medium text-white">${i.last_nick}</td>
+                            <td class="px-6 py-4">${nicks}</td>
+                            <td class="px-6 py-4 text-slate-400">${i.last_server}</td>
+                            <td class="px-6 py-4 text-amber-300 font-mono">${i.last_clan || '-'}</td>
+                            <td class="px-6 py-4 text-slate-400 font-mono text-xs">${i.version}</td>
+                            <td class="px-6 py-4 text-xs text-slate-500">${date}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                instBody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-slate-500">Nenhuma instalação encontrada.</td></tr>`;
+            }
+
+            // Events
+            const events = await fetchWithAuth(`/api/admin/events${queryParam}`);
+            const eventsBody = document.getElementById('eventsBody');
+            if (events && events.length > 0) {
+                eventsBody.innerHTML = events.slice(0, 30).map(e => {
+                    const date = new Date(e.created_at).toLocaleTimeString('pt-BR');
+                    const badge = e.event_type === 'SERVER_JOIN' 
+                        ? `<span class="text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-2 py-0.5 rounded">JOIN</span>`
+                        : e.event_type === 'SERVER_LEAVE'
+                        ? `<span class="text-rose-400 bg-rose-950/60 border border-rose-800/50 px-2 py-0.5 rounded">LEAVE</span>`
+                        : `<span class="text-cyan-400 bg-cyan-950/60 border border-cyan-800/50 px-2 py-0.5 rounded">${e.event_type}</span>`;
+
+                    return `
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="px-6 py-3 text-slate-500">${date}</td>
+                            <td class="px-6 py-3">${badge}</td>
+                            <td class="px-6 py-3 text-slate-200 font-sans font-medium">${e.nick}</td>
+                            <td class="px-6 py-3 text-slate-400">${e.server}</td>
+                            <td class="px-6 py-3 text-amber-300">${e.clan || '-'}</td>
+                            <td class="px-6 py-3 text-emerald-400">#${e.short_id}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        window.onload = () => {
+            const saved = localStorage.getItem('modpack_admin_key');
+            if (saved) document.getElementById('adminKeyInput').value = saved;
+            refreshData();
+            // Atualização periódica a cada 10 segundos
+            setInterval(refreshData, 10000);
+        };
+    </script>
+</body>
+</html>

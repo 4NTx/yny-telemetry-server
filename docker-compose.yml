@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  telemetry-server:
+    build: .
+    container_name: yny-telemetry-server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - CLIENT_TOKEN=yny-modpack-client
+      - ADMIN_KEY=admin123
+    volumes:
+      - ./data:/app/data
