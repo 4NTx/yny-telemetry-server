@@ -274,9 +274,12 @@ app.post('/api/telemetry/logs', telemetryLimiter, (req, res) => {
     db.serialize(() => {
         db.run('BEGIN IMMEDIATE', err => {
             if (err) return res.status(500).json({ error: 'Banco indisponível.' });
-            const stmt = db.prepare(`INSERT OR IGNORE INTO diagnostic_logs
+            const stmt = db.prepare(`INSERT INTO diagnostic_logs
                 (install_id, entry_id, short_id, nick, server, log_time, category, message)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(install_id, entry_id) DO UPDATE SET message = excluded.message
+                WHERE instr(diagnostic_logs.message, '[REDACTED]') > 0
+                  AND instr(excluded.message, '[REDACTED]') = 0`);
             for (const row of rows) stmt.run(row);
             stmt.finalize(err2 => {
                 if (err2) return db.run('ROLLBACK', () => res.status(500).json({ error: 'Falha ao gravar lote.' }));

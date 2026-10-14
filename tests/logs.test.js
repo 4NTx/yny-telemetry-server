@@ -76,7 +76,27 @@ const path = require('node:path');
       });
     });
     assert.equal(remaining, 1, 'remote logs must remain in SQLite');
-    console.log('PASS: ingest, deduplication, admin query and indefinite remote retention');
+    const repair = {
+      ...body,
+      entries: [{ ...body.entries[0], id: 'entry-2', message: 'Por favor digite /login [REDACTED]' }]
+    };
+    for (const message of ['Por favor digite /login [REDACTED]', 'Por favor digite /login suaSenha']) {
+      repair.entries[0].message = message;
+      const posted = await fetch(`${base}/api/telemetry/logs`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-client-token': 'test-client' },
+        body: JSON.stringify(repair)
+      });
+      assert.equal(posted.status, 200);
+    }
+    const repaired = await fetch(`${base}/api/admin/logs?installId=test-install`, {
+      headers: { 'x-admin-key': 'test-admin' }
+    });
+    assert.equal(repaired.status, 200);
+    const repairedRows = await repaired.json();
+    assert.equal(repairedRows.length, 2);
+    assert.equal(repairedRows.find(row => row.message.includes('/login')).message, 'Por favor digite /login suaSenha');
+    console.log('PASS: ingest, deduplication, redacted-row repair and indefinite remote retention');
   } finally {
     child.kill();
     await childExit;
